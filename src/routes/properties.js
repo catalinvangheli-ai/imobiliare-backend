@@ -60,6 +60,17 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get my properties - TREBUIE ÎNAINTEA RUTEI /:id
+router.get('/my', authenticate, async (req, res) => {
+  try {
+    const properties = await Property.find({ owner: req.userId })
+      .sort({ createdAt: -1 });
+    res.json(properties);
+  } catch (error) {
+    res.status(500).json({ message: 'Eroare', error: error.message });
+  }
+});
+
 // Get single property
 router.get('/:id', async (req, res) => {
   try {
@@ -73,17 +84,6 @@ router.get('/:id', async (req, res) => {
     res.json(property);
   } catch (error) {
     res.status(500).json({ message: 'Eroare la obținerea proprietății', error: error.message });
-  }
-});
-
-// Get my properties
-router.get('/my', authenticate, async (req, res) => {
-  try {
-    const properties = await Property.find({ owner: req.userId })
-      .sort({ createdAt: -1 });
-    res.json(properties);
-  } catch (error) {
-    res.status(500).json({ message: 'Eroare', error: error.message });
   }
 });
 

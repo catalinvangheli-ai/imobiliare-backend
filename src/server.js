@@ -15,9 +15,28 @@ const __dirname = dirname(__filename);
 const app = express();
 const httpServer = createServer(app);
 
-// Configure CORS to accept all origins in production
+// Configure CORS to accept all origins in production and Capacitor apps
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' ? true : (process.env.FRONTEND_URL || 'http://localhost:3000'),
+  origin: function (origin, callback) {
+    // Allow requests from Capacitor apps (capacitor://, ionic://, http://localhost)
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      'capacitor://localhost',
+      'ionic://localhost',
+      'http://localhost'
+    ];
+    
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // In production or if origin matches
+    if (process.env.NODE_ENV === 'production' || allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all in development
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true
 };
