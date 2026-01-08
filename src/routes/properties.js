@@ -123,7 +123,9 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
 
     const updateData = { ...req.body };
     
-    // ADAUGĂ imaginile noi la cele existente file.path); // Cloudinary URL-uri
+    // ADAUGĂ imaginile noi la cele existente (nu le suprascrie)
+    if (req.files && req.files.length > 0) {
+      const newImages = req.files.map(file => file.path); // Cloudinary URL-uri
       updateData.images = [...(property.images || []), ...newImages];
       console.log('📸 Added new Cloudinary images:', newImages);
     }
@@ -134,9 +136,7 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
     console.log('✅ Property updated with images:', property.images);
     res.json(property);
   } catch (error) {
-    console.error('❌ ty);
-  } catch (error) {
-    console.error('Error updating property:', error);
+    console.error('❌ Error updating property:', error);
     res.status(500).json({ message: 'Eroare la actualizarea proprietății', error: error.message });
   }
 });
