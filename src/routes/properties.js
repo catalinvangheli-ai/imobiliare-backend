@@ -1,31 +1,32 @@
 import express from 'express';
 import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import { authenticate } from '../middleware/auth.js';
 import Property from '../models/Property.js';
 
 const router = express.Router();
 
-// Multer configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+// Configurare Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'db0htnrxf',
+  api_key: process.env.CLOUDINARY_API_KEY || '533557596816111',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'HXWkfZ1FStsuEqlhky1nUWwDJKA'
+});
+
+// Cloudinary storage pentru imagini
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'imobiliare-properties',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 1200, height: 800, crop: 'limit' }]
   }
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Doar imagini sunt permise'));
-    }
-  }
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
 // Get all properties with filters
@@ -93,14 +94,16 @@ router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
     const propertyData = {
       ...req.body,
       owner: req.userId,
-      images: req.files ? req.files.map(file => `/uploads/${file.filename}`) : []
+      images: req.files ? req.files.map(file => file.path) : [] // Cloudinary returnează URL-ul complet în file.path
     };
 
     const property = new Property(propertyData);
     await property.save();
 
+    console.log('✅ Property created with Cloudinary images:', property.images);
     res.status(201).json(property);
   } catch (error) {
+    console.error('❌ Error creating property:', error);
     res.status(500).json({ message: 'Eroare la crearea proprietății', error: error.message });
   }
 });
@@ -120,16 +123,18 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
 
     const updateData = { ...req.body };
     
-    // ADAUGĂ imaginile noi la cele existente (nu le suprascrie)
-    if (req.files && req.files.length > 0) {
-      const newImages = req.files.map(file => `/uploads/${file.filename}`);
+    // ADAUGĂ imaginile noi la cele existente file.path); // Cloudinary URL-uri
       updateData.images = [...(property.images || []), ...newImages];
+      console.log('📸 Added new Cloudinary images:', newImages);
     }
 
     Object.assign(property, updateData);
     await property.save();
 
+    console.log('✅ Property updated with images:', property.images);
     res.json(property);
+  } catch (error) {
+    console.error('❌ ty);
   } catch (error) {
     console.error('Error updating property:', error);
     res.status(500).json({ message: 'Eroare la actualizarea proprietății', error: error.message });
