@@ -119,8 +119,11 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
     }
 
     const updateData = { ...req.body };
+    
+    // ADAUGĂ imaginile noi la cele existente (nu le suprascrie)
     if (req.files && req.files.length > 0) {
-      updateData.images = req.files.map(file => `/uploads/${file.filename}`);
+      const newImages = req.files.map(file => `/uploads/${file.filename}`);
+      updateData.images = [...(property.images || []), ...newImages];
     }
 
     Object.assign(property, updateData);
@@ -128,6 +131,7 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
 
     res.json(property);
   } catch (error) {
+    console.error('Error updating property:', error);
     res.status(500).json({ message: 'Eroare la actualizarea proprietății', error: error.message });
   }
 });
