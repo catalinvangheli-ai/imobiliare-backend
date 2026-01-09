@@ -91,11 +91,20 @@ router.get('/:id', async (req, res) => {
 // Create property
 router.post('/', authenticate, upload.array('images', 10), async (req, res) => {
   try {
+    console.log('📝 Creating property...');
+    console.log('   Body:', req.body);
+    console.log('   Files received:', req.files ? req.files.length : 0);
+    if (req.files && req.files.length > 0) {
+      console.log('   First file:', req.files[0]);
+    }
+    
     const propertyData = {
       ...req.body,
       owner: req.userId,
       images: req.files ? req.files.map(file => file.path) : [] // Cloudinary returnează URL-ul complet în file.path
     };
+
+    console.log('   Images URLs:', propertyData.images);
 
     const property = new Property(propertyData);
     await property.save();
