@@ -130,13 +130,25 @@ router.put('/:id', authenticate, upload.array('images', 10), async (req, res) =>
       return res.status(403).json({ message: 'Nu ai permisiunea să modifici această proprietate' });
     }
 
-    const updateData = { ...req.body };
+    // Exclude images din req.body (imaginile vin prin req.files)
+    const { images: _, ...updateData } = req.body;
     
-    // ADAUGĂ imaginile noi la cele existente (nu le suprascrie)
+    console.log('📝 Update - Files received:', req.files?.length || 0);
+    
     if (req.files && req.files.length > 0) {
+      console.log('📸 Files details:');
+      req.files.forEach((file, index) => {
+        console.log(`   File ${index + 1}:`, {
+          originalname: file.originalname,
+          size: file.size,
+          cloudinaryPath: file.path
+        });
+      });
       const newImages = req.files.map(file => file.path); // Cloudinary URL-uri
       updateData.images = [...(property.images || []), ...newImages];
       console.log('📸 Added new Cloudinary images:', newImages);
+    } else {
+      console.log('⚠️ NO FILES in update - req.body.images:', req.body.images);
     }
 
     Object.assign(property, updateData);
